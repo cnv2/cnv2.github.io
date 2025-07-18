@@ -3,8 +3,52 @@
     <title>Chaldean Numerology Calculator</title>
   </head>
   <body>
-    <div>This works.</div>
+    <h1>Numerology Calculator</h1><br>
+    <textarea id="numero-in"></textarea>
     <br>
-    <span>This works too.</span>
+    <span id="numero-out"></span>
   </body>
+  <script>
+    num=[
+        ['a','i','j','q','y'],
+        ['b','k','r'],
+        ['c','g','l','s'],
+        ['d','m','t'],
+        ['e','h','n','x'],
+        ['u','v','w'],
+        ['o','z'],
+        ['f','p']
+    ]
+
+    String.prototype.ncalc = function() {
+        finalAns=0;
+        this.toLowerCase().split('').forEach((chr, index, arr) => {
+            assignedNum=0;
+            num.forEach(function(el) {
+                if (el.find(el => el==chr))
+                    assignedNum=num.indexOf(el)+1;
+            });
+            finalAns+=assignedNum;
+        });
+        original = finalAns;
+        digitalRoot = function (rnum) {
+            rnum = parseInt(rnum);
+            if(rnum < 10)
+                return rnum;
+            tmp=0;
+            rnum.toString().split('').forEach(el => tmp=tmp+parseInt(el));
+            return digitalRoot(tmp);
+        }
+        return original+" ~"+digitalRoot(finalAns).toString();
+    }
+    
+    document.getElementById('numero-in').oninput = (() => {
+      document.getElementById("numero-out").innerHTML = "";
+      document.getElementById("numero-in").value.split("\n").forEach(word => {
+        if(word.length != 0)
+          document.getElementById("numero-out").innerHTML += word + " (" + word.ncalc() + ")<br>"
+        else document.getElementById("numero-out").innerHTML += "<br/>"
+      })
+    })
+</script>
 </html>
