@@ -28,7 +28,7 @@
     String.prototype.ncalc = function() {
         finalAns=0;
         this.toLowerCase().split('').forEach((chr, index, arr) => {
-            assignedNum=0;
+            assignedNum=parseInt(chr) || 0;
             num.forEach(function(el) {
                 if (el.find(el => el==chr))
                     assignedNum=num.indexOf(el)+1;
