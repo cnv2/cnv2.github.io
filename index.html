@@ -8,7 +8,8 @@
   <body>
     <h1>String Calculator</h1><br>
     <h3>Input</h3>
-    <textarea id="numero-in" style="width: 200px;height: 250px;"></textarea>
+    <textarea id="numero-in" style="width: 200px;height: 250px;"></textarea><br>
+    <h3>Filters</h3>
     <label>Initial Character: </label>
     <select name="start-filter" id="start-filter">
       <option value="">No Filter</option>
@@ -97,13 +98,19 @@
     
     function updateResults() {
       document.getElementById("numero-out").innerHTML = "";
+      trimFlag=0;
       document.getElementById("numero-in").value.split("\n").forEach(word => {
-        filterPref = document.getElementById('result-filter').value == '' || document.getElementById('result-filter').value == word.ncalc().split('~')[1];
-        filterPref = filterPref && (document.getElementById('start-filter').value == '' || document.getElementById('result-filter').value == word[0] || 
-                                    (document.getElementById('result-filter').value == '#' && !Number.isNaN(parseInt(word[0])) ))
-        if(word.length != 0 && filterPref)
-          document.getElementById("numero-out").innerHTML += word + " (" + word.ncalc() + ")<br>"
-        else document.getElementById("numero-out").innerHTML += "<br/>"
+        if(word.length == 0) {
+            if(trimFlag) document.getElementById("numero-out").innerHTML += "<br/>"
+        } else {
+            filterPref = document.getElementById('result-filter').value == '' || document.getElementById('result-filter').value == word.ncalc().split('~')[1];
+            filterPref = filterPref && (document.getElementById('start-filter').value == '' || document.getElementById('start-filter').value.toLowerCase() == word[0].toLowerCase() || 
+                                        (document.getElementById('start-filter').value == '#' && !Number.isNaN(parseInt(word[0])) ))
+            if(filterPref) {
+              document.getElementById("numero-out").innerHTML += word + " (" + word.ncalc() + ")<br>";
+              trimFlag = 1;
+            }
+        }
       })
     }
 </script>
