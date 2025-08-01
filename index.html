@@ -99,6 +99,8 @@
       document.getElementById("numero-out").innerHTML = "";
       document.getElementById("numero-in").value.split("\n").forEach(word => {
         filterPref = document.getElementById('result-filter').value == '' || document.getElementById('result-filter').value == word.ncalc().split('~')[1];
+        filterPref = filterPref && (document.getElementById('start-filter').value == '' || document.getElementById('result-filter').value == word[0] || 
+                                    (document.getElementById('result-filter').value == '#' && !Number.isNaN(parseInt(word[0])) ))
         if(word.length != 0 && filterPref)
           document.getElementById("numero-out").innerHTML += word + " (" + word.ncalc() + ")<br>"
         else document.getElementById("numero-out").innerHTML += "<br/>"
