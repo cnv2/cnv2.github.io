@@ -205,27 +205,36 @@
     line.addEventListener("drop",()=>{line.classList.remove("drag-over"); if(line!==draggedItem){const allLines=Array.from(notepad.querySelectorAll(".line")); const draggedIndex=allLines.indexOf(draggedItem); const targetIndex=allLines.indexOf(line); if(draggedIndex<targetIndex){notepad.insertBefore(draggedItem,line.nextSibling);}else{notepad.insertBefore(draggedItem,line);}}});
     
     // For mobile-friendly drag
+    let touchStartX = 0, touchStartY = 0, dragging = false;
+
     line.addEventListener("touchstart", (e) => {
-        draggedItem = line;
-        e.target.style.opacity = 0.5;
+        if(!e.target.closest("input")){ // allow direct input tap
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            dragging = false;
+        }
     }, {passive: true});
     
     line.addEventListener("touchmove", (e) => {
-        e.preventDefault(); // prevent scrolling
         const touch = e.touches[0];
-        const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        if(elemBelow && elemBelow.closest(".line") && elemBelow.closest(".line") !== draggedItem){
-            elemBelow.closest(".line").classList.add("drag-over");
+        const dx = Math.abs(touch.clientX - touchStartX);
+        const dy = Math.abs(touch.clientY - touchStartY);
+        if(dx > 8 || dy > 8){ // threshold to consider as drag
+            dragging = true;
+            draggedItem = line;
+            line.style.opacity = 0.5;
+            // now handle reordering logic
         }
     }, {passive: false});
     
     line.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        if(draggedItem){
-            document.querySelectorAll(".line").forEach(l => l.classList.remove("drag-over"));
-            draggedItem.style.opacity = 1;
-            draggedItem = null;
+        line.style.opacity = 1;
+        if(!dragging && e.target.closest("input")){
+            e.target.focus(); // focus input on tap
         }
+        dragging = false;
+        draggedItem = null;
     });
   }
   addEvents(document.querySelector(".line"));
