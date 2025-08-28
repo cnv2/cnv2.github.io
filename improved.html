@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chaldean Numerology Calculator</title>
 <style>
   body { margin:0; font-family: Arial, sans-serif; }
@@ -202,6 +203,30 @@
     line.addEventListener("dragenter",(e)=>{e.preventDefault(); if(line!==draggedItem) line.classList.add("drag-over");});
     line.addEventListener("dragleave",()=>line.classList.remove("drag-over"));
     line.addEventListener("drop",()=>{line.classList.remove("drag-over"); if(line!==draggedItem){const allLines=Array.from(notepad.querySelectorAll(".line")); const draggedIndex=allLines.indexOf(draggedItem); const targetIndex=allLines.indexOf(line); if(draggedIndex<targetIndex){notepad.insertBefore(draggedItem,line.nextSibling);}else{notepad.insertBefore(draggedItem,line);}}});
+    
+    // For mobile-friendly drag
+    line.addEventListener("touchstart", (e) => {
+        draggedItem = line;
+        e.target.style.opacity = 0.5;
+    }, {passive: true});
+    
+    line.addEventListener("touchmove", (e) => {
+        e.preventDefault(); // prevent scrolling
+        const touch = e.touches[0];
+        const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        if(elemBelow && elemBelow.closest(".line") && elemBelow.closest(".line") !== draggedItem){
+            elemBelow.closest(".line").classList.add("drag-over");
+        }
+    }, {passive: false});
+    
+    line.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        if(draggedItem){
+            document.querySelectorAll(".line").forEach(l => l.classList.remove("drag-over"));
+            draggedItem.style.opacity = 1;
+            draggedItem = null;
+        }
+    });
   }
   addEvents(document.querySelector(".line"));
 
@@ -235,6 +260,30 @@
       devWindow.style.left=x+"px"; devWindow.style.top=y+"px";
     }
   });
+
+  // Touch dragging for Dev window
+  devTitle.addEventListener("touchstart", (e) => {
+      dragging = true;
+      const touch = e.touches[0];
+      offsetX = touch.clientX - devWindow.offsetLeft;
+      offsetY = touch.clientY - devWindow.offsetTop;
+  }, {passive:true});
+  
+  document.addEventListener("touchmove", (e) => {
+      if(dragging){
+          const touch = e.touches[0];
+          const topNavHeight = document.querySelector("nav").offsetHeight;
+          const bottomNavHeight = document.querySelector("footer").offsetHeight;
+          let x = touch.clientX - offsetX;
+          let y = touch.clientY - offsetY;
+          x = Math.max(0, Math.min(window.innerWidth-devWindow.offsetWidth, x));
+          y = Math.max(topNavHeight, Math.min(window.innerHeight-devWindow.offsetHeight-bottomNavHeight, y));
+          devWindow.style.left = x + "px";
+          devWindow.style.top = y + "px";
+      }
+  }, {passive:false});
+  
+  document.addEventListener("touchend", () => { dragging=false; });
 
   // Dev send
 // Dev send with themed command display
