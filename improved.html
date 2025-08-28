@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chaldean Numerology Calculator</title>
+<style>
+  body { margin:0; font-family: Arial, sans-serif; }
+
+  /* Themes */
+  body.light { background: #ffffff; color: #000000; }
+  body.dark { background: #111111; color: #ffffff; }
+  body.sepia { background: #f4ecd8; color: #5b4636; }
+
+  /* Top Navbar - persistent */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #8b4513;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    z-index: 1000;
+  }
+
+  nav h1 { margin: 0; font-size: 20px; }
+  .nav-right { display:flex; align-items:center; gap:10px; }
+  nav select, nav button { padding: 5px 8px; border-radius:5px; border:none; cursor:pointer; font-size:14px; }
+
+  /* Adjust Notepad to start below top navbar and leave space above bottom navbar */
+  .notepad {
+    margin: 60px auto 60px; /* leave space for top & bottom navs */
+    width: 100%;
+    background: inherit;
+    color: inherit;
+  }
+
+  .line { display:flex; align-items:center; padding:8px 12px; border-bottom:1px solid rgba(0,0,0,0.1); background: inherit; }
+  .line:last-child { border-bottom:none; }
+  .handle { cursor:grab; font-size:18px; margin-right:8px; user-select:none; }
+  .input-group { display:flex; align-items:center; flex-wrap:nowrap; flex:1; }
+  .input-wrapper { position:relative; display:inline-block; }
+  .input-wrapper input { border:none; background:transparent; color:inherit; font-size:16px; outline:none; padding:4px; min-width:50px; width:auto; }
+  .input-mirror { position:absolute; top:0; left:0; visibility:hidden; white-space:pre; font-size:16px; font-family:inherit; padding:4px; }
+  .ghost-box { min-width:40px; margin-left:6px; padding:4px 6px; border:1px solid #aaa; border-radius:4px; background:rgba(0,0,0,0.05); font-size:14px; text-align:center; pointer-events:none; opacity:0; transition:opacity 0.3s; }
+  .ghost-box.visible { opacity:1; }
+  .drag-over { border:2px dashed #8b4513; }
+
+  /* Bottom Navbar - persistent */
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #8b4513;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    z-index: 999;
+  }
+
+  /* Dev window */
+  .dev-window {
+    position:fixed; bottom:80px; right:20px; width:300px; height:300px;
+    background:white; color:black; border:1px solid #ccc; border-radius:8px;
+    display:none; flex-direction:column; box-shadow:0 4px 8px rgba(0,0,0,0.2); z-index:2000;
+    resize:both; overflow:auto;
+  }
+  .dev-title { background:#8b4513; color:white; padding:6px; font-weight:bold; border-radius:8px 8px 0 0; cursor:move; user-select:none; }
+  .dev-body { flex:1; padding:6px; overflow-y:auto; background:#f9f9f9; }
+  .dev-input { display:flex; border-top:1px solid #ccc; }
+  .dev-input input { flex:1; border:none; padding:6px; outline:none; font-size:14px; }
+  .dev-input button { border:none; background:#8b4513; color:white; padding:6px 10px; cursor:pointer; }
+
+</style>
+</head>
+<body class="light">
+
+<!-- Top Navbar -->
+<nav>
+  <h1>Calculator</h1>
+  <div class="nav-right">
+    <button id="devBtn">Dev</button>
+    <button id="backupBtn">Backup list</button>
+    <button id="retrieveBtn">Retrieve</button>
+    <select id="themeSelector">
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="sepia">Sepia</option>
+    </select>
+  </div>
+</nav>
+
+<!-- Notepad -->
+<div class="notepad" id="notepad">
+  <div class="line" draggable="true">
+    <div class="handle">☰</div>
+    <div class="input-group">
+      <div class="input-wrapper">
+        <input type="text" placeholder="Type here...">
+        <span class="input-mirror"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Navbar -->
+<footer>Made with love by AI</footer>
+
+<!-- Dev Window -->
+<div class="dev-window" id="devWindow">
+  <div class="dev-title" id="devTitle">Dev Chat</div>
+  <div class="dev-body" id="devBody"></div>
+  <div class="dev-input">
+    <input type="text" id="devInput" placeholder="Type message...">
+    <button id="devSend">➤</button>
+  </div>
+</div>
+
+<script>
+  // --- Theme and cookie ---
+  const themeSelector = document.getElementById("themeSelector");
+  const savedTheme = document.cookie.split("; ").find(row => row.startsWith("theme="))?.split("=")[1];
+  if(savedTheme){ document.body.className = savedTheme; themeSelector.value=savedTheme; }
+  themeSelector.addEventListener("change", ()=>{document.body.className=themeSelector.value; document.cookie="theme="+themeSelector.value+"; path=/"; });
+
+  // --- Notepad logic ---
+  const notepad = document.getElementById("notepad");
+  let draggedItem=null;
+  function digitalRoot(n){while(n>9){n=n.toString().split("").reduce((a,b)=>a+parseInt(b),0);} return n;}
+
+  function ncalc(word) {
+    num = [
+      ['a', 'i', 'j', 'q', 'y'],
+      ['b', 'k', 'r'],
+      ['c', 'g', 'l', 's'],
+      ['d', 'm', 't'],
+      ['e', 'h', 'n', 'x'],
+      ['u', 'v', 'w'],
+      ['o', 'z'],
+      ['f', 'p']
+    ]
+
+    finalAns = 0;
+    word.toLowerCase().split('').forEach((chr, index, arr) => {
+      assignedNum = parseInt(chr) || 0;
+      num.forEach(function(el) {
+        if (el.find(el => el == chr))
+          assignedNum = num.indexOf(el) + 1;
+      });
+      finalAns += assignedNum;
+    });
+    return finalAns.toString();
+  }
+
+  function updateGhostBoxes(group,value){
+    let existing=group.querySelectorAll(".ghost-box");
+    existing.forEach(e=>e.remove());
+    if(value.trim().length>0){
+      const len=ncalc(value); const root=digitalRoot(len);
+      const box1=document.createElement("div"); box1.className="ghost-box visible"; box1.textContent=len;
+      const box2=document.createElement("div"); box2.className="ghost-box visible"; box2.textContent=root;
+      group.appendChild(box1); group.appendChild(box2);
+    }
+  }
+
+  function autoResize(input, mirror){mirror.textContent=input.value||input.placeholder||""; input.style.width=(mirror.offsetWidth+10)+"px";}
+
+  function createLine(){
+    const line=document.createElement("div"); line.className="line"; line.setAttribute("draggable","true");
+    line.innerHTML=`<div class="handle">☰</div><div class="input-group"><div class="input-wrapper"><input type="text" placeholder="Type here..."><span class="input-mirror"></span></div></div>`;
+    notepad.appendChild(line); addEvents(line); return line;
+  }
+
+  function addEvents(line){
+    const input=line.querySelector("input");
+    const mirror=line.querySelector(".input-mirror");
+    const group=line.querySelector(".input-group");
+    input.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); const newLine=createLine(); newLine.querySelector("input").focus();}
+        // Backspace on empty line removes it
+        else if(e.key === "Backspace" && input.value === ""){
+            const allLines = Array.from(notepad.querySelectorAll(".line"));
+            const index = allLines.indexOf(line);
+            if(index > 0){
+                e.preventDefault();
+                const prevInput = allLines[index-1].querySelector("input");
+                line.remove();
+                prevInput.focus();
+                autoResize(prevInput, allLines[index-1].querySelector(".input-mirror"));
+            }
+        }});
+    input.addEventListener("input",()=>{updateGhostBoxes(group,input.value); autoResize(input,mirror);});
+    autoResize(input,mirror);
+
+    line.addEventListener("dragstart",()=>{draggedItem=line; setTimeout(()=>line.style.display="none",0);});
+    line.addEventListener("dragend",()=>{draggedItem.style.display="flex"; draggedItem=null;});
+    line.addEventListener("dragover",(e)=>e.preventDefault());
+    line.addEventListener("dragenter",(e)=>{e.preventDefault(); if(line!==draggedItem) line.classList.add("drag-over");});
+    line.addEventListener("dragleave",()=>line.classList.remove("drag-over"));
+    line.addEventListener("drop",()=>{line.classList.remove("drag-over"); if(line!==draggedItem){const allLines=Array.from(notepad.querySelectorAll(".line")); const draggedIndex=allLines.indexOf(draggedItem); const targetIndex=allLines.indexOf(line); if(draggedIndex<targetIndex){notepad.insertBefore(draggedItem,line.nextSibling);}else{notepad.insertBefore(draggedItem,line);}}});
+  }
+  addEvents(document.querySelector(".line"));
+
+  // --- Dev window ---
+  const devBtn=document.getElementById("devBtn");
+  const devWindow=document.getElementById("devWindow");
+  const devTitle=document.getElementById("devTitle");
+  const devBody=document.getElementById("devBody");
+  const devInput=document.getElementById("devInput");
+  const devSend=document.getElementById("devSend");
+  let offsetX=0, offsetY=0, dragging=false;
+
+  devBtn.addEventListener("click",()=>{devWindow.style.display=(devWindow.style.display==="flex"?"none":"flex");});
+
+  devTitle.addEventListener("mousedown",(e)=>{
+    dragging=true;
+    offsetX=e.clientX-devWindow.offsetLeft;
+    offsetY=e.clientY-devWindow.offsetTop;
+    document.body.style.userSelect="none";
+  });
+
+  document.addEventListener("mouseup",()=>{dragging=false; document.body.style.userSelect="auto";});
+  document.addEventListener("mousemove",(e)=>{
+    if(dragging){
+      const topNavHeight=document.querySelector("nav").offsetHeight;
+      const bottomNavHeight=document.querySelector("footer").offsetHeight;
+      let x=e.clientX-offsetX;
+      let y=e.clientY-offsetY;
+      x=Math.max(0,Math.min(window.innerWidth-devWindow.offsetWidth,x));
+      y=Math.max(topNavHeight,Math.min(window.innerHeight-devWindow.offsetHeight-bottomNavHeight,y));
+      devWindow.style.left=x+"px"; devWindow.style.top=y+"px";
+    }
+  });
+
+  // Dev send
+// Dev send with themed command display
+devSend.addEventListener("click", () => {
+    const msgText = devInput.value.trim();
+    if (!msgText) return;
+
+    const cmdLine = document.createElement("div");
+    const respLine = document.createElement("div");
+
+    let response = "";
+    if (msgText.toLowerCase() === "help") response = "You asked for help!";
+    else if (msgText.toLowerCase() === "about") response = "v1.0";
+    else response = "command not in program";
+
+    // Theme-based colors
+    const theme = document.body.className;
+    let cmdColor = "", respColor = "";
+    if(theme === "light"){ cmdColor = "#007bff"; respColor = "#000000"; }
+    else if(theme === "dark"){ cmdColor = "#66b0ff"; respColor = "#ffffff"; }
+    else if(theme === "sepia"){ cmdColor = "#004080"; respColor = "#5b4636"; }
+
+    cmdLine.textContent = "# " + msgText;
+    cmdLine.style.color = cmdColor;
+    cmdLine.style.fontWeight = "bold";
+    cmdLine.style.marginBottom = "2px";
+
+    respLine.textContent = response;
+    respLine.style.color = respColor;
+    respLine.style.marginBottom = "6px";
+
+    devBody.appendChild(cmdLine);
+    devBody.appendChild(respLine);
+    devBody.scrollTop = devBody.scrollHeight;
+
+    devInput.value = "";
+});
+  devInput.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); devSend.click();}});
+
+  // Backup list
+  const backupBtn=document.getElementById("backupBtn");
+  backupBtn.addEventListener("click", async()=>{
+    const data=Array.from(notepad.querySelectorAll(".line input")).map(i=>i.value);
+    try{ const res=await fetch("http://localhost/", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({list:data})}); console.log("Backup response:", res);}catch(err){console.error(err);}
+  });
+
+  // Retrieve list
+  const retrieveBtn=document.getElementById("retrieveBtn");
+  retrieveBtn.addEventListener("click", async()=>{
+    try{
+      const res=await fetch("http://localhost/");
+      const json=await res.json();
+      if(json.list && Array.isArray(json.list)){
+        notepad.innerHTML="";
+        json.list.forEach(v=>{ const line=createLine(); line.querySelector("input").value=v; line.querySelector("input").dispatchEvent(new Event("input")); });
+      }
+    }catch(err){console.error(err);}
+  });
+
+</script>
+</body>
+</html>
